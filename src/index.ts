@@ -45,9 +45,17 @@ app.post('/expense', zValidator('json', expenseSchema), (c) => {
 app.get('/expense', (c) => {
 
   // データベースから全ての支出データを取得する処理
-  
+
   const expenses: Expense[] = [] // 仮のデータ
-  return c.json({ expenses })
+  return c.json({ expenses }, 200)
+})
+
+app.delete('/expense/:id', (c) => {
+  const { id } = c.req.param()  
+
+  // データベースから指定されたIDの支出データを削除する処理
+  
+  return c.json({ message: `${id}のデータが削除されました！` }, 200)
 })
 
 export default app
