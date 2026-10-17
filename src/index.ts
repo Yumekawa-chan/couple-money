@@ -1,8 +1,11 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { zValidator } from '@hono/zod-validator';
+import { v4 as uuidv4 } from 'uuid';
+import { logger } from 'hono/logger'
 
 const app = new Hono()
+app.use('*', logger())
 
 const expenseSchema = z.object({
   total: z.int().positive(),
@@ -30,13 +33,21 @@ app.post('/expense', zValidator('json', expenseSchema), (c) => {
   }
 
   const created_at = new Date().toISOString();
-  const expenseWithTimestamp = { ...expense, created_at };
+  const id = uuidv4();
+  const expenseWithTimestamp = { ...expense, created_at, id };
+
 
   // ここでデータベースに保存する処理
   
-  return c.json({ expense })
+  return c.json({ expense: expenseWithTimestamp }, 201)
 })
 
+app.get('/expense', (c) => {
 
+  // データベースから全ての支出データを取得する処理
+  
+  const expenses: Expense[] = [] // 仮のデータ
+  return c.json({ expenses })
+})
 
 export default app
