@@ -54,8 +54,21 @@ app.delete('/expense/:id', (c) => {
   const { id } = c.req.param()  
 
   // データベースから指定されたIDの支出データを削除する処理
-  
+
   return c.json({ message: `${id}のデータが削除されました！` }, 200)
+})
+
+app.put('/expense/:id', zValidator('json', expenseSchema), (c) => {
+  const { id } = c.req.param()
+  const expense: Expense = c.req.valid('json')
+
+  if (expense.spent_man + expense.spent_woman !== expense.total) {
+    return c.json({ error: '合計金額が一致しません！' }, 400)
+  }
+
+  // データベースで指定されたIDの支出データを更新する処理
+
+  return c.json({ message: `${id}のデータが更新されました！` }, 200)
 })
 
 export default app
