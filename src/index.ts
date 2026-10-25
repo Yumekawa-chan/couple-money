@@ -12,8 +12,19 @@ type Bindings = {
   DB: D1Database
 }
 
-const app = new Hono<{ Bindings: Bindings }>()
-app.use('*', logger())
+type Expense = {
+  total: number
+  user_id: string
+  spent_man: number
+  spent_woman: number
+  details: string | null
+}
+
+type User = {
+  id: string
+  password_hash: string
+  created_at: string
+}
 
 const expenseSchema = z.object({
   total: z.int().positive(),
@@ -29,34 +40,25 @@ const userSchema = z.object({
   created_at: z.string()
 })
 
-type Expense = {
-  total: number
-  user_id: string
-  spent_man: number
-  spent_woman: number
-  details: string | null
-}
+const app = new Hono<{ Bindings: Bindings }>()
+app.use('*', logger())
 
-type User = {
-  id: string
-  password_hash: string
-  created_at: string
-}
-
+// ルート
 app.get('/', (c) => {
   return c.text('Hello World')
 })
 
+// ユーザー作成
 app.post('/create-user', zValidator('json', userSchema), async(c) => {
   const user: User = c.req.valid('json')
   const db = drizzle(c.env.DB);
 
-  // ここでデータベースに保存する処理
   await db.insert(users).values(user);
 
   return c.json({ user }, 201)
 })
 
+// 支出登録
 app.post('/expense', zValidator('json', expenseSchema), async(c) => {
   const expense: Expense = c.req.valid('json')
   const db = drizzle(c.env.DB);
@@ -69,15 +71,13 @@ app.post('/expense', zValidator('json', expenseSchema), async(c) => {
   const id = uuidv4();
   const expenseWithTimestamp = { ...expense, created_at, id };
 
-  // ここでデータベースに保存する処理
   await db.insert(expenses).values(expenseWithTimestamp);
   
   return c.json({ expense: expenseWithTimestamp }, 201)
 })
 
+// 支出取得
 app.get('/expense', async(c) => {
-
-  // データベースから全ての支出データを取得する処理
   const db = drizzle(c.env.DB);
   const user_id = c.req.query('user_id');
 
@@ -90,17 +90,18 @@ app.get('/expense', async(c) => {
   return c.json({ expenses: expensesData }, 200)
 })
 
+// 支出削除
 app.delete('/expense/:id', async(c) => {
   const { id } = c.req.param()  
 
-  // データベースから指定されたIDの支出データを削除する処理
   const db = drizzle(c.env.DB);
-  db.delete(expenses).where(eq(expenses.id,id)).run();
+  await db.delete(expenses).where(eq(expenses.id,id)).run();
 
   return c.json({ message: `${id}のデータが削除されました！` }, 200)
-})
+  })
 
-app.put('/expense/:id', zValidator('json', expenseSchema), (c) => {
+// 支出更新
+app.put('/expense/:id', zValidator('json', expenseSchema), async(c) => {
   const { id } = c.req.param()
   const expense: Expense = c.req.valid('json')
 
@@ -108,9 +109,8 @@ app.put('/expense/:id', zValidator('json', expenseSchema), (c) => {
     return c.json({ error: '合計金額が一致しません！' }, 400)
   }
 
-  // データベースで指定されたIDの支出データを更新する処理
   const db = drizzle(c.env.DB);
-  db.update(expenses).set(expense).where(eq(expenses.id, id)).run();
+  await db.update(expenses).set(expense).where(eq(expenses.id, id)).run();
 
   return c.json({ message: `${id}のデータが更新されました！` }, 200)
 })
