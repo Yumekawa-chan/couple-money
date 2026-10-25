@@ -87,6 +87,8 @@ app.put('/expense/:id', zValidator('json', expenseSchema), (c) => {
   }
 
   // データベースで指定されたIDの支出データを更新する処理
+  const db = drizzle(c.env.DB);
+  db.update(expenses).set(expense).where(eq(expenses.id, id)).run();
 
   return c.json({ message: `${id}のデータが更新されました！` }, 200)
 })
