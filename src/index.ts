@@ -68,10 +68,12 @@ app.get('/expense', async(c) => {
   return c.json({ expenses: expensesData }, 200)
 })
 
-app.delete('/expense/:id', (c) => {
+app.delete('/expense/:id', async(c) => {
   const { id } = c.req.param()  
 
   // データベースから指定されたIDの支出データを削除する処理
+  const db = drizzle(c.env.DB);
+  db.delete(expenses).where(eq(expenses.id,id)).run();
 
   return c.json({ message: `${id}のデータが削除されました！` }, 200)
 })
