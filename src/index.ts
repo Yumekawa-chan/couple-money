@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { logger } from 'hono/logger';
 import { drizzle } from 'drizzle-orm/d1'
 import { eq } from 'drizzle-orm'
-import { expenses } from './db/schema'
+import { expenses, users } from './db/schema'
 import type { D1Database } from '@cloudflare/workers-types'
 
 type Bindings = {
@@ -23,6 +23,12 @@ const expenseSchema = z.object({
   details: z.string().max(100).nullable()
 })
 
+const userSchema = z.object({
+  id: z.string(),
+  password_hash: z.string(),
+  created_at: z.string()
+})
+
 type Expense = {
   total: number
   user_id: string
@@ -31,8 +37,24 @@ type Expense = {
   details: string | null
 }
 
+type User = {
+  id: string
+  password_hash: string
+  created_at: string
+}
+
 app.get('/', (c) => {
   return c.text('Hello World')
+})
+
+app.post('/create-user', zValidator('json', userSchema), async(c) => {
+  const user: User = c.req.valid('json')
+  const db = drizzle(c.env.DB);
+
+  // ここでデータベースに保存する処理
+  await db.insert(users).values(user);
+
+  return c.json({ user }, 201)
 })
 
 app.post('/expense', zValidator('json', expenseSchema), async(c) => {
