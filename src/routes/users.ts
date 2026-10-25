@@ -23,4 +23,6 @@ user.post('/create', zValidator('json', userSchema), async(c) => {
   return c.json({ user }, 201)
 })
 
+// ユーザーの削除、更新はとりあえず不要
+
 export default user;
